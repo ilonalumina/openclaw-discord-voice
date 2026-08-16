@@ -1,0 +1,14 @@
+node_modules/
+dist/
+*.js.map
+*.d.ts.map
+.env
+.env.*
+
+# packed strays from the pre-extraction tree
+voice-gateway-pkg/
+
+# npm pack output — covers voice-gateway.tgz and the pre-rename
+# openclaw-plugin-voice-gateway-0.1.0.tgz, plus any future packs, so the
+# initial commit stays source-only and carries no pre-rename artifact.
+*.tgz
