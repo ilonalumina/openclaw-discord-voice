@@ -1,0 +1,188 @@
+{
+  "id": "discord-voice",
+  "name": "Discord Voice",
+  "version": "0.1.0",
+  "kind": "channel",
+  "description": "Real-time voice conversations in Discord voice channels with dual-mode engine (speech-to-speech + pipeline)",
+  "activation": {
+    "onStartup": true,
+    "onCapabilities": ["tool", "channel"]
+  },
+  "contracts": {
+    "tools": ["discord_voice"]
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "discordToken": {
+        "type": "string",
+        "description": "Discord bot token. Falls back to DISCORD_TOKEN env var."
+      },
+      "mode": {
+        "type": "string",
+        "enum": ["auto", "pipeline", "speech-to-speech"],
+        "default": "auto",
+        "description": "Voice engine mode. 'auto' prefers speech-to-speech when configured."
+      },
+      "stt": {
+        "type": "object",
+        "description": "Speech-to-text configuration",
+        "additionalProperties": false,
+        "properties": {
+          "provider": { "type": "string", "enum": ["deepgram", "whisper", "local-whisper"], "default": "deepgram" },
+          "fallback": { "type": "string", "enum": ["deepgram", "whisper", "local-whisper"], "default": "whisper" },
+          "deepgram": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "apiKey": { "type": "string", "description": "Falls back to DEEPGRAM_API_KEY env var." },
+              "model": { "type": "string", "default": "nova-3" },
+              "language": { "type": "string", "default": "en" },
+              "endpointing": { "type": "integer", "default": 300 },
+              "smartFormatting": { "type": "boolean", "default": true },
+              "keywords": { "type": "array", "items": { "type": "string" } }
+            }
+          },
+          "whisper": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "apiKey": { "type": "string", "description": "Falls back to OPENAI_API_KEY env var." },
+              "model": { "type": "string", "default": "whisper-1" },
+              "language": { "type": "string" },
+              "baseUrl": { "type": "string", "description": "Override base URL for an OpenAI-compatible transcription endpoint (e.g. Speaches). Defaults to https://api.openai.com/v1." }
+            }
+          },
+          "localWhisper": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "modelPath": { "type": "string" },
+              "model": { "type": "string", "default": "base.en" },
+              "threads": { "type": "integer", "default": 4 }
+            }
+          }
+        }
+      },
+      "tts": {
+        "type": "object",
+        "description": "Text-to-speech configuration",
+        "additionalProperties": false,
+        "properties": {
+          "provider": { "type": "string", "enum": ["cartesia", "elevenlabs", "openai", "kokoro"], "default": "cartesia" },
+          "fallback": { "type": "string", "enum": ["cartesia", "elevenlabs", "openai", "kokoro"], "default": "elevenlabs" },
+          "cartesia": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "apiKey": { "type": "string", "description": "Falls back to CARTESIA_API_KEY env var." },
+              "voiceId": { "type": "string", "default": "79a125e8-cd45-4c13-8a67-188112f4dd22" },
+              "model": { "type": "string", "default": "sonic-2" },
+              "language": { "type": "string", "default": "en" },
+              "speed": { "type": "number", "minimum": 0.5, "maximum": 2.0, "default": 1.0 }
+            }
+          },
+          "elevenlabs": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "apiKey": { "type": "string", "description": "Falls back to ELEVENLABS_API_KEY env var." },
+              "voiceId": { "type": "string", "default": "21m00Tcm4TlvDq8ikWAM" },
+              "model": { "type": "string", "default": "eleven_flash_v2_5" },
+              "stability": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.5 },
+              "similarityBoost": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.75 }
+            }
+          },
+          "openai": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "apiKey": { "type": "string", "description": "Falls back to OPENAI_API_KEY env var." },
+              "voice": { "type": "string", "default": "nova" },
+              "model": { "type": "string", "default": "tts-1" },
+              "speed": { "type": "number", "minimum": 0.25, "maximum": 4.0, "default": 1.0 },
+              "baseUrl": { "type": "string", "description": "Override base URL for an OpenAI-compatible speech endpoint (e.g. Speaches). Defaults to https://api.openai.com/v1." },
+              "streamPcm": { "type": "boolean", "default": false, "description": "Request generation-streaming PCM (body stream:true). Only for servers whose speech endpoint accepts a stream parameter; the standard OpenAI API and Speaches do not." }
+            }
+          },
+          "kokoro": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "voiceId": { "type": "string", "default": "af_heart" },
+              "speed": { "type": "number", "minimum": 0.5, "maximum": 2.0, "default": 1.0 }
+            }
+          }
+        }
+      },
+      "s2s": {
+        "type": "object",
+        "description": "Native speech-to-speech provider configuration",
+        "additionalProperties": false,
+        "properties": {
+          "provider": { "type": "string", "enum": ["openai-realtime", "gemini-live"] },
+          "openaiRealtime": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "apiKey": { "type": "string", "description": "Falls back to OPENAI_API_KEY env var." },
+              "model": { "type": "string", "default": "gpt-4o-realtime-preview" },
+              "voice": { "type": "string", "default": "alloy" },
+              "instructions": { "type": "string" },
+              "temperature": { "type": "number", "minimum": 0, "maximum": 2, "default": 0.8 }
+            }
+          },
+          "geminiLive": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "apiKey": { "type": "string", "description": "Falls back to GOOGLE_API_KEY env var." },
+              "model": { "type": "string", "default": "gemini-2.5-flash-native-audio-preview" },
+              "voice": { "type": "string", "default": "Puck" },
+              "instructions": { "type": "string" },
+              "sessionDurationMs": { "type": "integer", "default": 540000 }
+            }
+          }
+        }
+      },
+      "vad": {
+        "type": "object",
+        "description": "Voice activity detection configuration",
+        "additionalProperties": false,
+        "properties": {
+          "engine": { "type": "string", "enum": ["silero", "rms"], "default": "silero" },
+          "threshold": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.5 },
+          "silenceDurationMs": { "type": "integer", "minimum": 200, "maximum": 5000, "default": 1500 },
+          "minSpeechDurationMs": { "type": "integer", "minimum": 50, "maximum": 2000, "default": 250 }
+        }
+      },
+      "behavior": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "bargeIn": { "type": "boolean", "default": true },
+          "echoSuppression": { "type": "boolean", "default": true },
+          "maxRecordingMs": { "type": "integer", "default": 30000 },
+          "maxConversationTurns": { "type": "integer", "default": 50 },
+          "systemPrompt": { "type": "string" },
+          "allowedUsers": { "type": "array", "items": { "type": "string" }, "description": "Discord user IDs allowed to use voice. Empty = all users." }
+        }
+      }
+    }
+  },
+  "uiHints": {
+    "discordToken": { "label": "Discord Bot Token" },
+    "mode": { "label": "Voice Engine Mode" },
+    "stt.provider": { "label": "STT Provider" },
+    "stt.deepgram.apiKey": { "label": "Deepgram API Key", "sensitive": true },
+    "stt.whisper.apiKey": { "label": "OpenAI API Key (Whisper)", "sensitive": true },
+    "tts.provider": { "label": "TTS Provider" },
+    "tts.cartesia.apiKey": { "label": "Cartesia API Key", "sensitive": true },
+    "tts.elevenlabs.apiKey": { "label": "ElevenLabs API Key", "sensitive": true },
+    "tts.openai.apiKey": { "label": "OpenAI API Key (TTS)", "sensitive": true },
+    "s2s.provider": { "label": "Speech-to-Speech Provider" },
+    "s2s.openaiRealtime.apiKey": { "label": "OpenAI API Key (Realtime)", "sensitive": true },
+    "s2s.geminiLive.apiKey": { "label": "Google API Key (Gemini Live)", "sensitive": true }
+  }
+}
